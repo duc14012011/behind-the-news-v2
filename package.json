@@ -13,7 +13,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
+    "@google/genai": "^2.3.0",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
