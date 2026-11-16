@@ -1,0 +1,304 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <title>BEHIND THE NEWS | Kiểm chứng thông tin</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0d1422;
+      color: #f1f5f9;
+      line-height: 1.6;
+    }
+
+    header {
+      padding: 22px 8%;
+      border-bottom: 1px solid #263449;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #60a5fa;
+    }
+
+    .tag {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    main {
+      width: min(900px, 90%);
+      margin: 75px auto;
+    }
+
+    .intro { text-align: center; }
+
+    .intro h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      line-height: 1.15;
+      margin-bottom: 18px;
+    }
+
+    .intro h1 span { color: #60a5fa; }
+
+    .intro p {
+      color: #aab8ca;
+      max-width: 650px;
+      margin: auto;
+    }
+
+    .search-box {
+      margin-top: 38px;
+      padding: 25px;
+      background: #172338;
+      border: 1px solid #30435f;
+      border-radius: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      min-width: 0;
+      flex: 1;
+      padding: 16px;
+      border: 1px solid #40516b;
+      border-radius: 9px;
+      background: #0d1728;
+      color: white;
+      font-size: 15px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 14px 22px;
+      background: #3182ce;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 12px;
+    }
+
+    #status, #result {
+      margin-top: 25px;
+    }
+
+    .panel {
+      background: #172338;
+      border: 1px solid #30435f;
+      border-radius: 14px;
+      padding: 22px;
+      margin-top: 18px;
+    }
+
+    .panel h2 { margin-top: 0; }
+
+    .analysis {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #dbeafe;
+    }
+
+    .source {
+      display: block;
+      color: #7dd3fc;
+      overflow-wrap: anywhere;
+      margin: 12px 0;
+    }
+
+    .error { color: #fca5a5; }
+    .success { color: #86efac; }
+
+    footer {
+      text-align: center;
+      color: #718096;
+      padding: 30px 15px;
+      border-top: 1px solid #263449;
+      font-size: 13px;
+    }
+
+    @media(max-width: 600px) {
+      header { padding: 18px 5%; }
+      main { margin: 45px auto; }
+      .input-row { flex-direction: column; }
+      button { width: 100%; }
+      .search-box { padding: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">BEHIND THE NEWS</div>
+    <div class="tag">THINK BEFORE YOU SHARE</div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>Đằng sau mỗi tin tức<br>
+        là <span>sự thật</span> nào?</h1>
+      <p>
+        Công cụ hỗ trợ kiểm chứng thông tin bằng cách
+        phân tích nội dung bài báo và đối chiếu với
+        những nguồn thông tin khác trên Internet.
+      </p>
+    </section>
+
+    <section class="search-box">
+      <form id="verifyForm">
+        <label for="url">Đường link bài viết cần kiểm chứng</label>
+        <div class="input-row">
+          <input
+            id="url"
+            type="url"
+            placeholder="https://example.com/bai-viet..."
+            required
+          >
+          <button id="submitBtn" type="submit">
+            Kiểm chứng
+          </button>
+        </div>
+        <div class="hint">
+          Hãy nhập đường link bài báo công khai và có thể truy cập.
+        </div>
+      </form>
+    </section>
+
+    <div id="status" aria-live="polite"></div>
+    <section id="result"></section>
+  </main>
+
+  <footer>
+    BEHIND THE NEWS 2.0 · THINK CRITICALLY · VERIFY BEFORE SHARING
+    <br>
+    Công cụ hỗ trợ tham khảo, không thay thế việc xác minh độc lập.
+  </footer>
+
+  <script>
+    const form = document.getElementById("verifyForm");
+    const input = document.getElementById("url");
+    const button = document.getElementById("submitBtn");
+    const statusBox = document.getElementById("status");
+    const resultBox = document.getElementById("result");
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const url = input.value.trim();
+
+      button.disabled = true;
+      button.textContent = "Đang kiểm chứng...";
+      statusBox.textContent =
+        "Đang đọc bài báo, tìm kiếm nguồn đối chiếu và phân tích...";
+      resultBox.replaceChildren();
+
+      try {
+        const response = await fetch("/api/verify", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Không thể kiểm chứng.");
+        }
+
+        statusBox.textContent = "Đã hoàn thành kiểm chứng.";
+        statusBox.className = "success";
+
+        const articlePanel = document.createElement("div");
+        articlePanel.className = "panel";
+
+        const title = document.createElement("h2");
+        title.textContent = data.article.title || "Bài báo đã gửi";
+
+        const link = document.createElement("a");
+        link.href = data.article.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "source";
+        link.textContent = "Mở bài báo gốc";
+
+        articlePanel.append(title, link);
+
+        const analysisPanel = document.createElement("div");
+        analysisPanel.className = "panel";
+
+        const heading = document.createElement("h2");
+        heading.textContent = "Kết quả phân tích";
+
+        const analysis = document.createElement("div");
+        analysis.className = "analysis";
+        analysis.textContent = data.analysis;
+
+        analysisPanel.append(heading, analysis);
+
+        const sourcesPanel = document.createElement("div");
+        sourcesPanel.className = "panel";
+
+        const sourcesHeading = document.createElement("h2");
+        sourcesHeading.textContent = "Nguồn thông tin đối chiếu";
+        sourcesPanel.append(sourcesHeading);
+
+        (data.sources || []).forEach(source => {
+          const a = document.createElement("a");
+          a.className = "source";
+          a.href = source.url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = source.title || source.url;
+          sourcesPanel.append(a);
+        });
+
+        resultBox.append(
+          articlePanel,
+          analysisPanel,
+          sourcesPanel
+        );
+
+      } catch (error) {
+        statusBox.className = "error";
+        statusBox.textContent = error.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Kiểm chứng";
+      }
+    });
+  </script>
+</body>
+</html>
